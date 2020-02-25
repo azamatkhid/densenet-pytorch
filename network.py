@@ -58,8 +58,22 @@ class TransitionLayer(nn.Module):
 
 class DenseNet(nn.Module):
     def __init__(self,layers):
+        self.conv0=nn.Conv2d(inchannel,outchannel,kernel_size=7,stride=2,padding=3,bias=False)
+        self.bn0=nn.BatchNorm2d(outchannel)
+        self.act0=nn.ReLU(inplace=True)
+        self.pool0=nn.MaxPool2d(kernel_size=3,stride=2,padding=1)
+        self.layer1=self._make_dense_layer(layers[0],inchannel,growth)
+        self.tr_layer1=TransitionalLayer(inchannel+layers[0]*growth,inchannel)
+        self.layer2=self._make_dense_layer(layers[1],inchannel,growth)
+        self.tr_layer2=TransitionalLayer(inchannel+layers[1]*growth,inchannel)
+        self.layer3=self._make_dense_layer(layers[2],inchannel,growth)
+        self.tr_layer3=TransitionalLayer(inchannel+layers[2]*growth,inchannel)
+        self.layer4=self._make_dense_layer(layers[3],inchannel,growth)
+        self.globpooling=nn.AdaptiveAvgPool2d((1,1))
+        #self.layer5=nn.Linear(,num_classes)
 
-    def _make_dense_layer(self):
+    def _make_dense_layer(self,num_blocks,inchannel,outchannel):
+
 
     def forward(self,x)
 
