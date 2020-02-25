@@ -1,11 +1,6 @@
 import torch
 import torchvision.models as models
+from torchsummary import summary
 
-def main():
-    device=torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    print(device)
-    net=models.densenet121(pretrained=False)
-    print(net)
-
-if __name__=="__main__":
-    main()
+densenet=models.densenet121(pretrained=False)
+summary(densenet,(3,224,224))
