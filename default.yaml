@@ -1,0 +1,18 @@
+hydra:
+  run:
+    dir: ./output/${now:%Y-%m-%d}/${now:%H-%M-%S}
+
+parameters:
+  layers: [6,12,24,16]
+  epochs: 200
+  batch_size: 128
+  verbose_step: 100
+  verbose: 1
+  momentum: 0.9
+  lr: 0.1
+  mode: "train"
+  log_dir: "./tboard"
+  ckpts_dir: "./ckpts"
+  block: "basic"
+  num_classes: 10
+  model: "densenet121"
