@@ -3,7 +3,7 @@ hydra:
     dir: ./output/${now:%Y-%m-%d}/${now:%H-%M-%S}
 
 parameters:
-  layers: [1,1,1,1]
+  layers: [6,12,24,16]
   epochs: 200
   batch_size: 128
   verbose_step: 100
