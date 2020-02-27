@@ -72,22 +72,24 @@ class _DenseBlock(nn.Module):
 class DenseNet(nn.Module):
     def __init__(self,layers,inchannel,outchannel,growth,num_classes=1000):
         super(DenseNet,self).__init__()
+        self._layers=list(layers)
         self.conv0=nn.Conv2d(inchannel,outchannel,kernel_size=7,stride=2,padding=3,bias=False)
         self.bn0=nn.BatchNorm2d(outchannel)
         self.act0=nn.ReLU(inplace=True)
         self.pool0=nn.MaxPool2d(kernel_size=3,stride=2,padding=1)
         
         _blocks=[]
-        for num_blocks in layers[:-1]:
+        
+        for num_blocks in self._layers[:-1]:
             _blocks.append(_DenseBlock(outchannel,growth,num_blocks))
             _blocks.append(self._make_transition(outchannel+num_blocks*growth))
             outchannel=(outchannel+num_blocks*growth)//2
 
-        _blocks.append(_DenseBlock(outchannel,growth,layers[3]))
-        _blocks.append(nn.BatchNorm2d(outchannel+growth*layers[3]))
+        _blocks.append(_DenseBlock(outchannel,growth,self._layers[-1]))
+        _blocks.append(nn.BatchNorm2d(outchannel+growth*self._layers[-1]))
 
         self.blocks=nn.ModuleList(_blocks)
-        self.lastlayer=nn.Linear(outchannel+growth*layers[3],num_classes)
+        self.lastlayer=nn.Linear(outchannel+growth*self._layers[-1],num_classes)
    
         for m in self.modules():
             if isinstance(m, nn.Conv2d):

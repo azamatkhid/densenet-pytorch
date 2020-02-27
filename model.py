@@ -166,4 +166,12 @@ class Model:
             data=datasets.CIFAR10(root="./data",train=False,download=True,transform=self.train_transforms)
             self.test_data=torch.utils.data.DataLoader(data, batch_size=self.batch_size,shuffle=False,num_workers=1)
 
+import hydra
+from omegaconf import DictConfig
+@hydra.main("./default.yaml")
+def main(cfg):
+    configs=cfg["parameters"]
+    model=Model(**configs)
 
+if __name__=="__main__":
+    main()
