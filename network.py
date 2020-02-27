@@ -4,25 +4,42 @@ import torch.nn.functional as F
 import torchvision.models as models
 from torchsummary import summary
 
-class DenseBlock(nn.Module):
-    def __init__(self,inchannel,outchannel):
-        super(DenseBlock,self).__init__()
-        self.bn1=nn.BatchNorm2d(inchannel)
-        self.act1=nn.ReLU(inplace=True)
-        self.conv1=nn.Conv2d(inchannel,4*outchannel,kernel_size=1,stride=1,padding=0,bias=False)
-        self.bn2=nn.BatchNorm2d(4*outchannel)
-        self.act2=nn.ReLU(inplace=True)
-        self.conv2=nn.Conv2d(4*outchannel,outchannel,kernel_size=3,stride=1,padding=1,bias=False)
-        
+#class DenseBlock(nn.Module):
+#    def __init__(self,inchannel,outchannel):
+#        super(DenseBlock,self).__init__()
+#        self.bn1=nn.BatchNorm2d(inchannel)
+#        self.act1=nn.ReLU(inplace=True)
+#        self.conv1=nn.Conv2d(inchannel,4*outchannel,kernel_size=1,stride=1,padding=0,bias=False)
+#        self.bn2=nn.BatchNorm2d(4*outchannel)
+#        self.act2=nn.ReLU(inplace=True)
+#        self.conv2=nn.Conv2d(4*outchannel,outchannel,kernel_size=3,stride=1,padding=1,bias=False)
+#        
+#
+#    def forward(self,x):
+#        out=self.bn1(x)
+#        out=self.act1(out)
+#        out=self.conv1(out)
+#        out=self.bn2(out)
+#        out=self.act2(out)
+#        out=self.conv2(out)
+#        return torch.cat((x,out),dim=1)
+#
+#class TransitionLayer(nn.Module):
+#    def __init__(self,inchannel):
+#        super(TransitionLayer,self).__init__()
+#        outchannel=inchannel//2
+#        self.bn1=nn.BatchNorm2d(inchannel)
+#        self.act1=nn.ReLU(inplace=True)
+#        self.conv1=nn.Conv2d(inchannel,outchannel,kernel_size=1,stride=1,padding=0,bias=False)
+#        self.pooling=nn.AvgPool2d(kernel_size=2,stride=2,padding=0)
+#
+#    def forward(self,x):
+#        out=self.bn1(x)
+#        out=self.act1(out)
+#        out=self.conv1(out)
+#        out=self.pooling(out)
+#        return out
 
-    def forward(self,x):
-        out=self.bn1(x)
-        out=self.act1(out)
-        out=self.conv1(out)
-        out=self.bn2(out)
-        out=self.act2(out)
-        out=self.conv2(out)
-        return torch.cat((x,out),dim=1)
 
 class _DenseBlock(nn.Module):
     def __init__(self,inchannel,growth,num_blocks):
@@ -52,22 +69,6 @@ class _DenseBlock(nn.Module):
             inp=torch.cat((out,inp),dim=1)
         return inp
 
-#class TransitionLayer(nn.Module):
-#    def __init__(self,inchannel):
-#        super(TransitionLayer,self).__init__()
-#        outchannel=inchannel//2
-#        self.bn1=nn.BatchNorm2d(inchannel)
-#        self.act1=nn.ReLU(inplace=True)
-#        self.conv1=nn.Conv2d(inchannel,outchannel,kernel_size=1,stride=1,padding=0,bias=False)
-#        self.pooling=nn.AvgPool2d(kernel_size=2,stride=2,padding=0)
-#
-#    def forward(self,x):
-#        out=self.bn1(x)
-#        out=self.act1(out)
-#        out=self.conv1(out)
-#        out=self.pooling(out)
-#        return out
-
 class DenseNet(nn.Module):
     def __init__(self,layers,inchannel,outchannel,growth,num_classes=1000):
         super(DenseNet,self).__init__()
@@ -76,18 +77,28 @@ class DenseNet(nn.Module):
         self.act0=nn.ReLU(inplace=True)
         self.pool0=nn.MaxPool2d(kernel_size=3,stride=2,padding=1)
         
-        network=[]
+        _blocks=[]
         for num_blocks in layers[:-1]:
-            network.append(_DenseBlock(outchannel,growth,num_blocks))
-            network.append(self._make_transition(outchannel+num_blocks*growth))
+            _blocks.append(_DenseBlock(outchannel,growth,num_blocks))
+            _blocks.append(self._make_transition(outchannel+num_blocks*growth))
             outchannel=(outchannel+num_blocks*growth)//2
 
-        network.append(_DenseBlock(outchannel,growth,layers[3]))
-        network.append(nn.BatchNorm2d(outchannel+growth*layers[3]))
+        _blocks.append(_DenseBlock(outchannel,growth,layers[3]))
+        _blocks.append(nn.BatchNorm2d(outchannel+growth*layers[3]))
 
-        self.layers=nn.ModuleList(network)
+        self.blocks=nn.ModuleList(_blocks)
         self.lastlayer=nn.Linear(outchannel+growth*layers[3],num_classes)
-    
+   
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                nn.init.kaiming_normal_(m.weight)
+            elif isinstance(m, nn.BatchNorm2d):
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias, 0)
+            elif isinstance(m, nn.Linear):
+                nn.init.constant_(m.bias, 0)
+
+
     def _make_transition(self,inchannel):
         outchannel=inchannel//2
         return nn.Sequential(nn.BatchNorm2d(inchannel), nn.ReLU(inplace=True),
@@ -99,10 +110,10 @@ class DenseNet(nn.Module):
         out=self.act0(self.bn0(out))
         out=self.pool0(out)
         
-        for layer in self.layers:
-            out=layer(out)
-
-        out=torch.nn.functional.adaptive_avg_pool2d(out,(1,1))
+        for block in self.blocks:
+            out=block(out)
+        out=nn.functional.relu(out,inplace=True)
+        out=nn.functional.adaptive_avg_pool2d(out,(1,1))
         out=torch.flatten(out,1)
         out=self.lastlayer(out)
         return out
