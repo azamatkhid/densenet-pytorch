@@ -69,9 +69,9 @@ class _DenseBlock(nn.Module):
             inp=torch.cat((out,inp),dim=1)
         return inp
 
-class DenseNet(nn.Module):
+class Model(nn.Module):
     def __init__(self,layers,inchannel,outchannel,growth,num_classes=1000):
-        super(DenseNet,self).__init__()
+        super(Model,self).__init__()
         self._layers=list(layers)
         self.conv0=nn.Conv2d(inchannel,outchannel,kernel_size=7,stride=2,padding=3,bias=False)
         self.bn0=nn.BatchNorm2d(outchannel)
@@ -131,5 +131,5 @@ if __name__=="__main__":
 #    tranLayer=TransitionLayer(256)
 #    summary(tranLayer,(256,56,56))
 
-    densenet=DenseNet([6,12,24,16],3,64,32)
+    densenet=Model([6,12,24,16],3,64,32)
     summary(densenet,(3,224,224))

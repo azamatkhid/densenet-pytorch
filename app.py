@@ -2,15 +2,15 @@ import os
 import hydra
 from omegaconf import DictConfig
 
-from model import Model
+from model import Application
 
 @hydra.main("./default.yaml")
 def main(cfg):
     configs=cfg["parameters"]
 
-    model=Model(**configs)
-    model.train()
-    model.test()
+    app=Application(**configs)
+    app.train()
+    app.test()
 
     print("Success")
 

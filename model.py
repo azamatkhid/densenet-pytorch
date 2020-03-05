@@ -10,12 +10,14 @@ from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data.sampler import SubsetRandomSampler
 from torchsummary import summary
 
-from network import DenseNet
+from network import Model
 from tqdm import tqdm
 from hydra import utils
+import hydra
+from omegaconf import DictConfig
 
 
-class Model:
+class Application:
     def __init__(self,**configs):
         self.layers=configs["layers"]
         self.epochs=configs["epochs"]
@@ -28,6 +30,8 @@ class Model:
         self.verbose=configs["verbose"]
         self.num_classes=configs["num_classes"]
         self.device=torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        self.data_dir=os.path.join(utils.get_original_cwd(),"data")
+
         print(f"Device: {self.device}")
 
         torch.manual_seed(0)
@@ -45,7 +49,7 @@ class Model:
             transforms.Normalize(mean=[0.5,0.5,0.5],
                 std=[0.5,0.5,0.5])])
 
-        self.net=DenseNet(self.layers,3,64,32,num_classes=self.num_classes)
+        self.net=Model(self.layers,3,64,32,num_classes=self.num_classes)
         
         if torch.cuda.device_count()>0:
             self.net=nn.DataParallel(self.net)
@@ -139,7 +143,7 @@ class Model:
 
     def _load_data(self,*args):
         if args[0]=="train":
-            data=datasets.CIFAR10(root=os.path.join(utils.get_original_cwd(),"./data"),
+            data=datasets.CIFAR10(root=self.data_dir,
                     train=True,download=True,transform=self.train_transforms)
 
             data_size=len(data)
@@ -161,17 +165,15 @@ class Model:
                     num_workers=1)
 
         elif args[0]=="test":
-            data=datasets.CIFAR10(root=os.path.join(utils.get_original_cwd(),"./data"),
+            data=datasets.CIFAR10(root=self.data_dir,
                     train=False,download=True,transform=self.test_transforms)
             data=datasets.CIFAR10(root="./data",train=False,download=True,transform=self.train_transforms)
             self.test_data=torch.utils.data.DataLoader(data, batch_size=self.batch_size,shuffle=False,num_workers=1)
 
-import hydra
-from omegaconf import DictConfig
 @hydra.main("./default.yaml")
 def main(cfg):
     configs=cfg["parameters"]
-    model=Model(**configs)
+    model=Application(**configs)
 
 if __name__=="__main__":
     main()
