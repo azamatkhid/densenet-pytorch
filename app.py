@@ -31,7 +31,7 @@ class Application:
         self.num_classes=configs["num_classes"]
         self.device=torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.data_dir=os.path.join(utils.get_original_cwd(),"data")
-
+        self.dataset=getattr(datasets,configs["dataset"].upper())
         print(f"Device: {self.device}")
 
         torch.manual_seed(0)
@@ -143,7 +143,8 @@ class Application:
 
     def _load_data(self,*args):
         if args[0]=="train":
-            data=datasets.CIFAR10(root=self.data_dir,
+
+            data=self.dataset(root=self.data_dir,
                     train=True,download=True,transform=self.train_transforms)
 
             data_size=len(data)
@@ -165,15 +166,14 @@ class Application:
                     num_workers=1)
 
         elif args[0]=="test":
-            data=datasets.CIFAR10(root=self.data_dir,
+            data=self.dataset(root=self.data_dir,
                     train=False,download=True,transform=self.test_transforms)
-            data=datasets.CIFAR10(root="./data",train=False,download=True,transform=self.train_transforms)
             self.test_data=torch.utils.data.DataLoader(data, batch_size=self.batch_size,shuffle=False,num_workers=1)
 
 @hydra.main("./default.yaml")
 def main(cfg):
     configs=cfg["parameters"]
-    model=Application(**configs)
+    app=Application(**configs)
 
 if __name__=="__main__":
     main()

@@ -15,3 +15,4 @@ parameters:
   ckpts_dir: "./ckpts"
   num_classes: 10
   model: "densenet121"
+  dataset: "cifar10"
