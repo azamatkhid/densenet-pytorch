@@ -59,7 +59,7 @@ class Application:
         self.optimizer=optimizer(self.net.parameters(),lr=self.cfg.lr,
                 momentum=self.cfg.momentum,weight_decay=self.cfg.weight_decay)
         self.scheduler=torch.optim.lr_scheduler.StepLR(self.optimizer,
-                step_size=self.cfg.lr_step,gamma=self.cfg.gamma)
+                step_size=self.cfg.lr_step,gamma=self.cfg.lr_gamma)
 
         iteration=1
         for epch in range(self.cfg.epochs):
@@ -86,7 +86,6 @@ class Application:
                     iteration+=1
             
             self.scheduler.step()
-            print(f"[{epch}] loss: {epch_loss}")
 
         torch.save(self.net.state_dict(),os.path.join(self.cfg.ckpts_dir,"model.pth"))
 
@@ -147,19 +146,19 @@ class Application:
             valid_sampler=SubsetRandomSampler(valid_idx)
 
             self.train_data=torch.utils.data.DataLoader(data,
-                    batch_size=self.batch_size,
+                    batch_size=self.cfg.batch_size,
                     sampler=train_sampler,
                     num_workers=1)
 
             self.valid_data=torch.utils.data.DataLoader(data,
-                    batch_size=self.batch_size,
+                    batch_size=self.cfg.batch_size,
                     sampler=valid_sampler,
                     num_workers=1)
 
         elif args[0]=="test":
             data=self.dataset(root=self.data_dir,
                     train=False,download=True,transform=self.test_transforms)
-            self.test_data=torch.utils.data.DataLoader(data, batch_size=self.batch_size,shuffle=False,num_workers=1)
+            self.test_data=torch.utils.data.DataLoader(data, batch_size=self.cfg.batch_size,shuffle=False,num_workers=1)
 
 @hydra.main("./default.yaml")
 def main(cfg):

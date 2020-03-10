@@ -31,8 +31,6 @@ class DenseNet_official(Model):
         self.device=torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         print(f"{self.device}")
         
-        torch.manual_seed(0)
-        
         self.train_transforms=transforms.Compose([transforms.Resize((224,224),interpolation=2),
             transforms.Pad(4),
             transforms.RandomHorizontalFlip(p=0.5),
