@@ -48,7 +48,7 @@ class Application:
         
         self.net.to(self.device)
 
-        if self.cfg.verbose==1 and torch.cuda.device_count()<=1:
+        if self.cfg.verbose and torch.cuda.device_count()<=1:
             summary(self.net,(3,224,224))
 
 
