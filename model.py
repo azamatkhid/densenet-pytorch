@@ -32,7 +32,7 @@ class _DenseBlock(nn.Module):
             inp=torch.cat((out,inp),dim=1)
         return inp
 
-class Model(nn.Module):
+class DenseNet(nn.Module):
     def __init__(self,layers,inchannel,outchannel,growth,num_classes=1000):
         super(Model,self).__init__()
         self._layers=list(layers)
@@ -94,5 +94,5 @@ if __name__=="__main__":
 #    tranLayer=TransitionLayer(256)
 #    summary(tranLayer,(256,56,56))
 
-    densenet=Model([6,12,24,16],3,64,32)
+    densenet=DenseNet([6,12,24,16],3,64,32)
     summary(densenet,(3,224,224))

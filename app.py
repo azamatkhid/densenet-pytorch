@@ -10,7 +10,7 @@ from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data.sampler import SubsetRandomSampler
 from torchsummary import summary
 
-from model import Model
+from model import DenseNet
 from tqdm import tqdm
 from hydra import utils
 import hydra
@@ -49,7 +49,7 @@ class Application:
             transforms.Normalize(mean=[0.5,0.5,0.5],
                 std=[0.5,0.5,0.5])])
 
-        self.net=Model(self.layers,3,64,32,num_classes=self.num_classes)
+        self.net=DenseNet(self.layers,3,64,32,num_classes=self.num_classes)
         
         if torch.cuda.device_count()>0:
             self.net=nn.DataParallel(self.net)
