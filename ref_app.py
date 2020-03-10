@@ -31,8 +31,8 @@ class DenseNet_official(Application):
 def main(cfg: DictConfig) -> None:
     app=DenseNet_official(cfg.parameters)
     app.build()
-    model.train()
-    model.test()
+    app.train()
+    app.test()
 
     print("Success")
 
