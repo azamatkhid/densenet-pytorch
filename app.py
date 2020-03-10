@@ -18,24 +18,13 @@ from omegaconf import DictConfig
 
 
 class Application:
-    def __init__(self,**configs):
-        self.layers=configs["layers"]
-        self.epochs=configs["epochs"]
-        self.batch_size=configs["batch_size"]
-        self.log_dir=configs["log_dir"]
-        self.ckpts_dir=configs["ckpts_dir"]
-        self.lr=configs["lr"]
-        self.momentum=configs["momentum"]
-        self.verbose_step=configs["verbose_step"]
-        self.verbose=configs["verbose"]
-        self.num_classes=configs["num_classes"]
+    def __init__(self,cfg):
+        self.cfg=cfg
         self.device=torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.data_dir=os.path.join(utils.get_original_cwd(),"data")
-        self.dataset=getattr(datasets,configs["dataset"].upper())
+        self.dataset=getattr(datasets,cfg.dataset.upper())
         print(f"Device: {self.device}")
 
-        torch.manual_seed(0)
-        
         self.train_transforms=transforms.Compose([transforms.Resize((224,224),interpolation=2),
             transforms.Pad(4),
             transforms.RandomHorizontalFlip(p=0.5),
@@ -49,14 +38,14 @@ class Application:
             transforms.Normalize(mean=[0.5,0.5,0.5],
                 std=[0.5,0.5,0.5])])
 
-        self.net=DenseNet(self.layers,3,64,32,num_classes=self.num_classes)
+        self.net=DenseNet(self.cfg.layers,3,64,32,num_classes=self.cfg.num_classes)
         
         if torch.cuda.device_count()>0:
             self.net=nn.DataParallel(self.net)
             print(f"Number of GPUs {torch.cuda.device_count()}")
         self.net.to(self.device)
 
-        if self.verbose==1 and torch.cuda.device_count()<=1:
+        if self.cfg.verbose==1 and torch.cuda.device_count()<=1:
             summary(self.net,(3,224,224))
 
 
@@ -65,13 +54,15 @@ class Application:
         self._check_dirs()
         self._load_data("train")
 
-        self.writer=SummaryWriter(log_dir=self.log_dir)
+        self.writer=SummaryWriter(log_dir=self.cfg.log_dir)
         self.criterion=criterion()
-        self.optimizer=optimizer(self.net.parameters(),lr=self.lr,momentum=self.momentum,weight_decay=0.0001)
-        self.scheduler=torch.optim.lr_scheduler.StepLR(self.optimizer,step_size=80,gamma=0.1)
+        self.optimizer=optimizer(self.net.parameters(),lr=self.cfg.lr,
+                momentum=self.cfg.momentum,weight_decay=self.cfg.weight_decay)
+        self.scheduler=torch.optim.lr_scheduler.StepLR(self.optimizer,
+                step_size=self.cfg.lr_step,gamma=self.cfg.gamma)
 
         iteration=1
-        for epch in range(self.epochs):
+        for epch in range(self.cfg.epochs):
             running_loss=0.0
             epch_loss=0.0
             for idx, batch in enumerate(self.train_data,start=0):
@@ -84,20 +75,20 @@ class Application:
                 running_loss+=loss.item()
                 epch_loss+=loss.item()
 
-                if idx%self.verbose_step==self.verbose_step-1:
+                if idx%self.cfg.verbose_step==self.cfg.verbose_step-1:
                     valid_acc, valid_loss=self._validation()
-                    self.writer.add_scalar("Loss/Train",running_loss/self.verbose_step,iteration)
+                    self.writer.add_scalar("Loss/Train",running_loss/self.cfg.verbose_step,iteration)
                     self.writer.add_scalar("Loss/Validation",valid_loss,iteration)
                     self.writer.add_scalar("Acc/Validation",valid_acc,iteration)
                     self.writer.add_scalar("LearningRate",self.scheduler.get_lr()[0],iteration)
-                    print(f"{epch} train_loss: {running_loss/self.verbose_step}, val_loss: {valid_loss}, val_acc: {valid_acc}, lr: {self.scheduler.get_lr()[0]}")
+                    print(f"{epch} train_loss: {running_loss/self.cfg.verbose_step}, val_loss: {valid_loss}, val_acc: {valid_acc}, lr: {self.scheduler.get_lr()[0]}")
                     running_loss=0.0
                     iteration+=1
             
             self.scheduler.step()
             print(f"[{epch}] loss: {epch_loss}")
 
-        torch.save(self.net.state_dict(),os.path.join(self.ckpts_dir,"model.pth"))
+        torch.save(self.net.state_dict(),os.path.join(self.cfg.ckpts_dir,"model.pth"))
 
     def _validation(self):
         self.net.eval() # required due to BN layer
@@ -136,10 +127,10 @@ class Application:
 
 
     def _check_dirs(self):
-        if not os.path.exists(self.log_dir):
-            os.mkdir(self.log_dir)
-        if not os.path.exists(self.ckpts_dir):
-            os.mkdir(self.ckpts_dir)
+        if not os.path.exists(self.cfg.log_dir):
+            os.mkdir(self.cfg.log_dir)
+        if not os.path.exists(self.cfg.ckpts_dir):
+            os.mkdir(self.cfg.ckpts_dir)
 
     def _load_data(self,*args):
         if args[0]=="train":
@@ -172,8 +163,7 @@ class Application:
 
 @hydra.main("./default.yaml")
 def main(cfg):
-    configs=cfg["parameters"]
-    app=Application(**configs)
+    app=Application(cfg.parameters)
 
 if __name__=="__main__":
     main()

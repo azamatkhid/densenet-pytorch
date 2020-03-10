@@ -34,7 +34,7 @@ class _DenseBlock(nn.Module):
 
 class DenseNet(nn.Module):
     def __init__(self,layers,inchannel,outchannel,growth,num_classes=1000):
-        super(Model,self).__init__()
+        super(DenseNet,self).__init__()
         self._layers=list(layers)
         self.conv0=nn.Conv2d(inchannel,outchannel,kernel_size=7,stride=2,padding=3,bias=False)
         self.bn0=nn.BatchNorm2d(outchannel)
@@ -85,14 +85,5 @@ class DenseNet(nn.Module):
 
 
 if __name__=="__main__":
-#    denseBC=DenseBlock(64,32)
-#    summary(denseBC,(64,56,56))
-#
-#    denseLayer=_DenseBlock(64,32,6)
-#    summary(denseLayer,(64,56,56))
-#
-#    tranLayer=TransitionLayer(256)
-#    summary(tranLayer,(256,56,56))
-
     densenet=DenseNet([6,12,24,16],3,64,32)
     summary(densenet,(3,224,224))

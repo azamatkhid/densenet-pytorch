@@ -6,9 +6,7 @@ from app import Application
 
 @hydra.main("./default.yaml")
 def main(cfg):
-    configs=cfg["parameters"]
-
-    app=Application(**configs)
+    app=Application(cfg.parameters)
     app.train()
     app.test()
 
