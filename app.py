@@ -37,12 +37,15 @@ class Application:
             transforms.ToTensor(),
             transforms.Normalize(mean=[0.5,0.5,0.5],
                 std=[0.5,0.5,0.5])])
+        self.net=None
 
+    def build(self):
         self.net=DenseNet(self.cfg.layers,3,64,32,num_classes=self.cfg.num_classes)
-        
+
         if torch.cuda.device_count()>0:
             self.net=nn.DataParallel(self.net)
             print(f"Number of GPUs {torch.cuda.device_count()}")
+        
         self.net.to(self.device)
 
         if self.cfg.verbose==1 and torch.cuda.device_count()<=1:
@@ -163,6 +166,9 @@ class Application:
 @hydra.main("./default.yaml")
 def main(cfg):
     app=Application(cfg.parameters)
+    app.build()
+    app.train()
+    app.test()
 
 if __name__=="__main__":
     main()

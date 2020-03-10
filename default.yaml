@@ -7,7 +7,7 @@ parameters:
   epochs: 200
   batch_size: 128
   verbose_step: 100
-  verbose: 1
+  verbose: True
   momentum: 0.9
   lr: 0.1
   lr_step: 80
