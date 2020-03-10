@@ -6,11 +6,6 @@ import torch.nn as nn
 
 from torchsummary import  summary
 import torchvision.models as models
-import torchvision.datasets as datasets
-import torchvision.transforms as transforms
-
-from torch.utils.data.sampler import SubsetRandomSampler
-from torch.utils.tensorboard import SummaryWriter
 
 from app import Application
 
@@ -33,7 +28,7 @@ class DenseNet_official(Application):
             summary(self.net,(3,224,224))
 
 @hydra.main("./default.yaml")
-def main(cfg):
+def main(cfg: DictConfig) -> None:
     app=DenseNet_official(cfg.parameters)
     app.build()
     model.train()
